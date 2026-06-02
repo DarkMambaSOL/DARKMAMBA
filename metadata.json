@@ -1,0 +1,6 @@
+{
+  "name": "Dark Mamba SOL - Authentic Airdrop Portal",
+  "description": "An authentic, secure, and genuine community-driven airdrop verification and admin system for Dark Mamba SOL (DMSOL) on Solana.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
