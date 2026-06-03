@@ -459,20 +459,71 @@ export default function App() {
     return () => clearInterval(interval);
   }, [settings.countdown.target]);
 
-  // Handle Mock Wallet Integration to show legitimateness
-  const connectMockWallet = (provider: string) => {
-    const mockWallets: { [key: string]: string } = {
-      phantom: "7aMambaPkD9wsdfgY65K88bLPnQS2vNm3R4s5T6u7V8w",
-      solflare: "8fMambaSkD3asdfgY99L88bLPnQS9vNm2R5s4T2u1V5x",
-      backpack: "BackpackMambaD8Y65K88bLPnQS2vNm3R4s5u7V8w9Xz"
-    };
+  // Handle Real Wallet Integration to show legitimateness and support real extensions
+  const connectMockWallet = async (provider: string) => {
+    try {
+      let walletAddress = "";
+      let connectedViaExtension = false;
 
-    const addr = mockWallets[provider];
-    setMockWalletConnected(true);
-    setMockWalletAddress(addr);
-    setClaimWallet(addr);
-    setWalletSelectorOpen(false);
-    addToast(`${provider.toUpperCase()} Wallet securely paired via SHA-256 Signature!`, "success");
+      // 1. Attempt to connect to a real browser extension
+      if (provider === "phantom") {
+        const solanaProvider = (window as any).phantom?.solana || (window as any).solana;
+        if (solanaProvider && solanaProvider.isPhantom) {
+          addToast("Requesting connection to your Phantom wallet...", "info");
+          const resp = await solanaProvider.connect();
+          if (resp && resp.publicKey) {
+            walletAddress = resp.publicKey.toString();
+            connectedViaExtension = true;
+          }
+        } else {
+          // Instruct user to install Phantom
+          addToast("Phantom Wallet extension was not found. Please install the Phantom browser extension or open this page inside your Phantom in-app browser.", "error");
+          return;
+        }
+      } else if (provider === "solflare") {
+        const solflareProvider = (window as any).solflare;
+        if (solflareProvider) {
+          addToast("Requesting connection to Solflare...", "info");
+          await solflareProvider.connect();
+          if (solflareProvider.publicKey) {
+            walletAddress = solflareProvider.publicKey.toString();
+            connectedViaExtension = true;
+          }
+        } else {
+          addToast("Solflare wallet extension was not found. Please install Solflare.", "error");
+          return;
+        }
+      } else if (provider === "backpack") {
+        const backpackProvider = (window as any).backpack || (window as any).backpack?.solana;
+        if (backpackProvider) {
+          addToast("Requesting connection to Backpack...", "info");
+          await backpackProvider.connect();
+          if (backpackProvider.publicKey) {
+            walletAddress = backpackProvider.publicKey.toString();
+            connectedViaExtension = true;
+          }
+        } else {
+          addToast("Backpack wallet extension was not found. Please install Backpack.", "error");
+          return;
+        }
+      }
+
+      if (!connectedViaExtension) {
+        addToast("Connection was not approved or extension is unavailable.", "error");
+        return;
+      }
+
+      setMockWalletConnected(true);
+      setMockWalletAddress(walletAddress);
+      setClaimWallet(walletAddress);
+      setWalletSelectorOpen(false);
+      
+      const successMsg = `${provider.toUpperCase()} Wallet linked perfectly: ${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 6)}`;
+      addToast(successMsg, "success");
+    } catch (error: any) {
+      console.error(`Wallet connection error for ${provider}:`, error);
+      addToast(error?.message || `Failed to connect with ${provider} wallet.`, "error");
+    }
   };
 
   const disconnectMockWallet = () => {
@@ -771,7 +822,7 @@ export default function App() {
   });
 
   return (
-    <div className="relative min-height-screen bg-black text-gray-200 font-sans selection:bg-[#39FF14] selection:text-black">
+    <div className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-black text-gray-200 font-sans selection:bg-[#39FF14] selection:text-black">
       {/* GRID LAYOUT BACKGROUND */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(57,255,20,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(57,255,20,0.015)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none z-0"></div>
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-r from-emerald-500/5 to-transparent rounded-full blur-3xl pointer-events-none z-0"></div>
