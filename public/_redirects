@@ -1,1 +1,5 @@
-/*    /index.html   200
+# Seamless local API routing on Netlify
+/api/*  /.netlify/functions/api/:splat  200
+
+# React SPA rewrite
+/*      /index.html                     200

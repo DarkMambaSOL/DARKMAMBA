@@ -106,11 +106,13 @@ const isStaticNetlifyHost = typeof window !== "undefined" &&
   !window.location.hostname.includes("run.app") && 
   !window.location.hostname.includes("aistudio");
 
-const DEFAULT_SERVER_BACKEND_URL = "https://ais-pre-kowt4ccc3ouwt2otz2p2z2-258669627027.asia-east1.run.app";
+const DEFAULT_SERVER_BACKEND_URL = (((import.meta as any).env?.VITE_API_BASE) || "").replace(/\/$/, "");
 
-const API_BASE = isStaticNetlifyHost 
-  ? (localStorage.getItem("dmsol_custom_api_base") || DEFAULT_SERVER_BACKEND_URL)
-  : "";
+const API_BASE = ((import.meta as any).env?.VITE_API_BASE)
+  ? ((import.meta as any).env.VITE_API_BASE).replace(/\/$/, "")
+  : (isStaticNetlifyHost 
+      ? (localStorage.getItem("dmsol_custom_api_base") || DEFAULT_SERVER_BACKEND_URL)
+      : "");
 
 export default function App() {
   // Navigation / View State
@@ -206,6 +208,13 @@ export default function App() {
   const [adminPlanFilter, setAdminPlanFilter] = useState("");
   const [adminStatusFilter, setAdminStatusFilter] = useState("");
   const [txVerificationHash, setTxVerificationHash] = useState("");
+  const [customApiBase, setCustomApiBase] = useState<string>(() => {
+    try {
+      return localStorage.getItem("dmsol_custom_api_base") || "";
+    } catch (e) {
+      return "";
+    }
+  });
   const [txVerificationResult, setTxVerificationResult] = useState<any>(null);
 
   // Interactive UI enhancements states (Social Proof, Scanner, Admin settings)
@@ -2443,6 +2452,45 @@ export default function App() {
                   >
                     <Check className="w-5 h-5 text-black" /> Click to Save Portal Configuration
                   </button>
+                </div>
+
+                {/* EXTERNAL BACKEND API COORDINATES */}
+                <div className="lg:col-span-2 bg-[#0c0c0c] border border-zinc-850 p-6 rounded-2xl text-left mt-6">
+                  <h4 className="text-xs font-black text-[#39FF14] uppercase tracking-widest border-b border-zinc-850 pb-2 flex items-center gap-1.5 font-mono mb-4">
+                    <Link className="w-4 h-4 text-[#39FF14]" /> Netlify & External Backend Coordinates
+                  </h4>
+                  <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
+                    By default, this site communicates with the Express backend running on Cloud Run. If you host the frontend on Netlify (which supports static hosting only) and want to deploy the Express backend to Render, Railway, or a custom VPS, enter your custom backend URL below.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input 
+                      type="text"
+                      placeholder="e.g. https://your-custom-backend.railway.app"
+                      value={customApiBase}
+                      onChange={(e) => {
+                        const val = e.target.value.trim();
+                        setCustomApiBase(val);
+                        if (val) {
+                          localStorage.setItem("dmsol_custom_api_base", val);
+                        } else {
+                          localStorage.removeItem("dmsol_custom_api_base");
+                        }
+                      }}
+                      className="flex-1 bg-black border border-zinc-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-[#39FF14]"
+                    />
+                    <button 
+                      onClick={() => {
+                        window.location.reload();
+                      }}
+                      className="px-5 py-3 bg-[#39FF14]/15 hover:bg-[#39FF14] hover:text-black border border-[#39FF14]/30 text-[#39FF14] font-bold text-xs uppercase rounded-xl transition cursor-pointer"
+                    >
+                      Apply & Re-Sync
+                    </button>
+                  </div>
+                  <div className="text-[10px] text-zinc-500 mt-2.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 font-mono">
+                    <span>Active Endpoint Base URL:</span>
+                    <strong className="text-zinc-300 font-mono select-all font-semibold break-all">{API_BASE || "(Relative origin / Cloud Run)"}</strong>
+                  </div>
                 </div>
 
                 {/* NETLIFY DEPLOYMENT & EXPORTER SERVICES */}
